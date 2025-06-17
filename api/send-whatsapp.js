@@ -1,6 +1,7 @@
+require('dotenv').config(); // Add this to load .env file
 const express = require('express');
 const twilio = require('twilio');
-const cors = require('cors'); // Added CORS support
+const cors = require('cors');
 
 // Initialize Express app
 const app = express();
