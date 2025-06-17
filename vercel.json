@@ -2,10 +2,6 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/test.js",
-      "use": "@vercel/node"
-    },
-    {
       "src": "api/send-whatsapp.js",
       "use": "@vercel/node"
     }
