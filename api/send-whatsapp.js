@@ -5,16 +5,33 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
 
-// Validate environment variables
-if (!accountSid || !authToken || !twilioWhatsAppNumber) {
-  module.exports = (req, res) => {
-    res.status(500).json({ success: false, error: 'Server configuration error: Missing Twilio credentials' });
+const allowCors = (handler) => {
+  return async (req, res) => {
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*'); // You can change '*' to 'http://localhost:3001' for tighter security
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'X-CSRF-Token, X-Requested-With, Accept, Content-Type, Authorization'
+    );
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+
+    return await handler(req, res);
   };
+};
+
+if (!accountSid || !authToken || !twilioWhatsAppNumber) {
+  module.exports = allowCors((req, res) => {
+    res.status(500).json({ success: false, error: 'Server configuration error: Missing Twilio credentials' });
+  });
 } else {
   const twilioClient = new twilio(accountSid, authToken);
 
-  module.exports = async (req, res) => {
-    // Ensure the request method is POST
+  module.exports = allowCors(async (req, res) => {
     if (req.method !== 'POST') {
       return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
@@ -36,5 +53,5 @@ if (!accountSid || !authToken || !twilioWhatsAppNumber) {
       console.error('Error sending WhatsApp message:', error);
       res.status(500).json({ success: false, error: error.message });
     }
-  };
+  });
 }
