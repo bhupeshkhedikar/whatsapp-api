@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/send-whatsapp.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/send-whatsapp",
+      "dest": "api/send-whatsapp.js"
+    }
+  ]
+}

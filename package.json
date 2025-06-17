@@ -1,0 +1,12 @@
+{
+  "name": "whatsapp-api",
+  "version": "1.0.0",
+  "main": "api/send-whatsapp.js",
+  "scripts": {
+    "start": "node api/send-whatsapp.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "twilio": "^4.21.0"
+  }
+}
