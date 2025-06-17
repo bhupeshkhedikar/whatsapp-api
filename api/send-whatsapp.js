@@ -1,4 +1,4 @@
-require('dotenv').config(); // Add this to load .env file
+require('dotenv').config(); // Load .env file
 const express = require('express');
 const twilio = require('twilio');
 const cors = require('cors');
