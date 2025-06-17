@@ -5,12 +5,5 @@
       "src": "api/send-whatsapp.js",
       "use": "@vercel/node"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/send-whatsapp",
-      "methods": ["POST"],
-      "dest": "api/send-whatsapp.js"
-    }
   ]
 }
