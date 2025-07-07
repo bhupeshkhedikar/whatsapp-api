@@ -3,7 +3,7 @@ const twilio = require('twilio');
 // Twilio credentials
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+const twilioWhatsAppNumber = +15557448679;
 
 const allowCors = (handler) => {
   return async (req, res) => {
