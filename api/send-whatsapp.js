@@ -14,63 +14,44 @@ const allowCors = (handler) => {
       'Access-Control-Allow-Headers',
       'X-CSRF-Token, X-Requested-With, Accept, Content-Type, Authorization'
     );
+
     if (req.method === 'OPTIONS') {
       return res.status(200).end();
     }
+
     return await handler(req, res);
   };
 };
 
-if (!accountSid || !authToken || !twilioWhatsAppNumber) {
-  module.exports = allowCors((req, res) => {
-    res.status(500).json({ success: false, error: 'Missing Twilio credentials' });
-  });
-} else {
-  const twilioClient = twilio(accountSid, authToken);
+const client = twilio(accountSid, authToken);
 
-  module.exports = allowCors(async (req, res) => {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
-    }
+module.exports = allowCors(async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
 
-    const { to, templateName, language, parameters } = req.body;
+  const { to, templateName, language, parameters } = req.body;
 
-    if (!to || !templateName || !language || !parameters || !Array.isArray(parameters)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields: to, templateName, language, parameters[]',
-      });
-    }
+  if (!to || !templateName || !language || !Array.isArray(parameters)) {
+    return res.status(400).json({ success: false, error: 'Missing required fields' });
+  }
 
-    try {
-      const response = await twilioClient.messages.create({
-        from: `whatsapp:${twilioWhatsAppNumber}`,
-        to: `whatsapp:${to}`,
-        contentSid: process.env.TWILIO_TEMPLATE_CONTENT_SID, // Only if using Content API (Twilio Conversations)
-        contentVariables: JSON.stringify({
-          1: parameters[0],
-          2: parameters[1],
-          3: parameters[2],
-          4: parameters[3],
-          5: parameters[4],
-          6: parameters[5],
-          7: parameters[6],
-          8: parameters[7],
-          9: parameters[8],
-          10: parameters[9],
-          11: parameters[10],
-          12: parameters[11]
-        }),
-        // OR — Use messagingServiceSid and template_name (for classic messaging API)
-        provideFeedback: false,
-        statusCallback: '', // optional callback URL
-        // you can also try `messagingServiceSid` instead of `from`
-      });
+  try {
+    const response = await client.messages.create({
+      from: `whatsapp:${twilioWhatsAppNumber}`,
+      to: `whatsapp:${to}`,
+      contentTemplateSid: templateName, // Make sure this is your approved template SID in Twilio (not template name)
+      contentVariables: JSON.stringify(
+        parameters.reduce((acc, val, index) => {
+          acc[String(index + 1)] = val;
+          return acc;
+        }, {})
+      )
+    });
 
-      res.status(200).json({ success: true, messageSid: response.sid });
-    } catch (error) {
-      console.error('Error sending WhatsApp message:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-}
+    res.status(200).json({ success: true, sid: response.sid });
+  } catch (error) {
+    console.error('WhatsApp send error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
