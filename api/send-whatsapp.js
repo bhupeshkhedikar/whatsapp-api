@@ -5,7 +5,6 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
 const client = twilio(accountSid, authToken);
 
-// Allow CORS for frontend
 const allowCors = handler => async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -21,8 +20,21 @@ module.exports = allowCors(async (req, res) => {
 
   const { to, contentSid, contentVariables } = req.body;
 
-  if (!to || !contentSid || !contentVariables) {
-    return res.status(400).json({ success: false, error: 'Missing required fields' });
+  // Validate required fields
+  if (!to) {
+    return res.status(400).json({ success: false, error: 'Missing "to" number' });
+  }
+  if (!contentSid) {
+    return res.status(400).json({ success: false, error: 'Missing contentSid' });
+  }
+  if (!contentVariables || typeof contentVariables !== 'object') {
+    return res.status(400).json({ success: false, error: 'Missing or invalid contentVariables' });
+  }
+
+  // Validate phone number format
+  const phoneRegex = /^\+[1-9]\d{1,14}$/;
+  if (!phoneRegex.test(to)) {
+    return res.status(400).json({ success: false, error: 'Invalid phone number format' });
   }
 
   try {
@@ -30,12 +42,26 @@ module.exports = allowCors(async (req, res) => {
       to: `whatsapp:${to}`,
       messagingServiceSid,
       contentSid,
-      contentVariables,
+      contentVariables: JSON.stringify(contentVariables), // Ensure contentVariables is stringified
     });
 
     res.status(200).json({ success: true, sid: message.sid });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Twilio Error:', error);
+    
+    // More specific error handling
+    let errorMessage = error.message;
+    if (error.code === 21211) {
+      errorMessage = 'Invalid phone number';
+    } else if (error.code === 21608) {
+      errorMessage = 'Messaging Service not properly configured';
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      error: errorMessage,
+      code: error.code,
+      details: error.moreInfo 
+    });
   }
 });
