@@ -40,7 +40,7 @@ module.exports = allowCors(async (req, res) => {
   try {
     const message = await client.messages.create({
       to: `whatsapp:${to}`,
-      messagingServiceSid,
+      from: 'whatsapp:+917020258039',
       contentSid,
       contentVariables: JSON.stringify(contentVariables), // Ensure contentVariables is stringified
     });
