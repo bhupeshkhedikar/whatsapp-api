@@ -40,7 +40,7 @@ module.exports = allowCors(async (req, res) => {
     const response = await client.messages.create({
       from: `whatsapp:${twilioWhatsAppNumber}`,
       to: `whatsapp:${to}`,
-      contentTemplateSid: templateName, // Make sure this is your approved template SID in Twilio (not template name)
+      contentTemplateSid: 'USdf0f12570e479b9f725e97a37ca76125', // Make sure this is your approved template SID in Twilio (not template name)
       contentVariables: JSON.stringify(
         parameters.reduce((acc, val, index) => {
           acc[String(index + 1)] = val;
