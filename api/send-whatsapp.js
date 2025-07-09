@@ -8,49 +8,67 @@ const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
 const allowCors = (handler) => {
   return async (req, res) => {
     res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*'); // You can change '*' to 'http://localhost:3001' for tighter security
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader(
       'Access-Control-Allow-Headers',
       'X-CSRF-Token, X-Requested-With, Accept, Content-Type, Authorization'
     );
-
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
-
+    if (req.method === 'OPTIONS') return res.status(200).end();
     return await handler(req, res);
   };
 };
 
 if (!accountSid || !authToken || !twilioWhatsAppNumber) {
   module.exports = allowCors((req, res) => {
-    res.status(500).json({ success: false, error: 'Server configuration error: Missing Twilio credentials' });
+    res.status(500).json({ success: false, error: 'Missing Twilio credentials' });
   });
 } else {
-  const twilioClient = new twilio(accountSid, authToken);
+  const client = new twilio(accountSid, authToken);
 
   module.exports = allowCors(async (req, res) => {
     if (req.method !== 'POST') {
       return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
 
-    const { to, message } = req.body;
+    const { to, templateName, language = 'mr', parameters = [] } = req.body;
 
-    if (!to || !message) {
-      return res.status(400).json({ success: false, error: 'Missing required fields: to and message' });
+    if (!to || !templateName) {
+      return res.status(400).json({ success: false, error: 'Missing "to" or "templateName" fields' });
     }
 
     try {
-      await twilioClient.messages.create({
-        body: message,
-        from: twilioWhatsAppNumber,
+      const message = await client.messages.create({
+        from: `whatsapp:${twilioWhatsAppNumber}`,
         to: `whatsapp:${to}`,
+        contentSid: undefined,
+        contentVariables: undefined,
+        contentTemplateData: undefined,
+
+        // Template message setup
+        contentSid: undefined,
+        body: undefined, // no plain body
+        messagingServiceSid: undefined,
+        provideFeedback: false,
+
+        contentTemplateData: undefined,
+        persistentAction: undefined,
+
+        content: {
+          template_name: templateName,
+          language: { code: language },
+          components: [
+            {
+              type: 'body',
+              parameters: parameters.map((p) => ({ type: 'text', text: p })),
+            },
+          ],
+        },
       });
-      res.status(200).json({ success: true, message: 'WhatsApp notification sent' });
+
+      res.status(200).json({ success: true, sid: message.sid });
     } catch (error) {
-      console.error('Error sending WhatsApp message:', error);
+      console.error('Error sending template message:', error.message);
       res.status(500).json({ success: false, error: error.message });
     }
   });
